@@ -344,7 +344,6 @@ cdef extern from "hdfs.h":
     #
     int hdfsFlush(hdfsFS fs, hdfsFile file)
 
-
     #
     # hdfsHFlush - Flush out the data in client's user buffer. After the
     # return of this call, new readers will see the data.
@@ -354,7 +353,6 @@ cdef extern from "hdfs.h":
     #
     int hdfsHFlush(hdfsFS fs, hdfsFile file)
 
-
     #
     # hdfsAvailable - Number of bytes that can be read from this
     # input stream without blocking.
@@ -363,7 +361,6 @@ cdef extern from "hdfs.h":
     # @return Returns available bytes; -1 on error. 
     #
     int hdfsAvailable(hdfsFS fs, hdfsFile file)
-
 
     #
     # hdfsCopy - Copy file from one filesystem to another.
@@ -375,7 +372,6 @@ cdef extern from "hdfs.h":
     #
     int hdfsCopy(hdfsFS srcFS, char* src, hdfsFS dstFS, char* dst)
 
-
     #
     # hdfsMove - Move file from one filesystem to another.
     # @param srcFS The handle to source filesystem.
@@ -385,7 +381,6 @@ cdef extern from "hdfs.h":
     # @return Returns 0 on success, -1 on error. 
     #
     int hdfsMove(hdfsFS srcFS, char* src, hdfsFS dstFS, char* dst)
-
 
     #
     # hdfsDelete - Delete file. 
@@ -407,7 +402,6 @@ cdef extern from "hdfs.h":
     #
     int hdfsRename(hdfsFS fs, char* oldPath, char* newPath)
 
-
     # 
     # hdfsGetWorkingDirectory - Get the current working directory for
     # the given filesystem.
@@ -418,7 +412,6 @@ cdef extern from "hdfs.h":
     #
     char* hdfsGetWorkingDirectory(hdfsFS fs, char *buffer, size_t bufferSize)
 
-
     # 
     # hdfsSetWorkingDirectory - Set the working directory. All relative
     # paths will be resolved relative to it.
@@ -428,7 +421,6 @@ cdef extern from "hdfs.h":
     #
     int hdfsSetWorkingDirectory(hdfsFS fs, char* path)
 
-
     # 
     # hdfsCreateDirectory - Make the given file and all non-existent
     # parents into directories.
@@ -437,7 +429,6 @@ cdef extern from "hdfs.h":
     # @return Returns 0 on success, -1 on error. 
     #
     int hdfsCreateDirectory(hdfsFS fs, char* path)
-
 
     # 
     # hdfsSetReplication - Set the replication of the specified
@@ -486,7 +477,6 @@ cdef extern from "hdfs.h":
     #
     hdfsFileInfo *hdfsGetPathInfo(hdfsFS fs, char* path)
 
-
     # 
     # hdfsFreeFileInfo - Free up the hdfsFileInfo array (including fields) 
     # @param hdfsFileInfo The array of dynamically-allocated hdfsFileInfo
@@ -494,7 +484,6 @@ cdef extern from "hdfs.h":
     # @param numEntries The size of the array.
     #
     void hdfsFreeFileInfo(hdfsFileInfo *hdfsFileInfo, int numEntries)
-
 
     # 
     # hdfsGetHosts - Get hostnames where a particular block (determined by
@@ -511,7 +500,6 @@ cdef extern from "hdfs.h":
     char*** hdfsGetHosts(hdfsFS fs, char* path, 
                          tOffset start, tOffset length)
 
-
     # 
     # hdfsFreeHosts - Free up the structure returned by hdfsGetHosts
     # @param hdfsFileInfo The array of dynamically-allocated hdfsFileInfo
@@ -519,7 +507,6 @@ cdef extern from "hdfs.h":
     # @param numEntries The size of the array.
     #
     void hdfsFreeHosts(char ***blockHosts)
-
 
     # 
     # hdfsGetDefaultBlockSize - Get the default blocksize.
@@ -530,7 +517,6 @@ cdef extern from "hdfs.h":
     # @return              Returns the default blocksize, or -1 on error.
     #
     tOffset hdfsGetDefaultBlockSize(hdfsFS fs)
-
 
     # 
     # hdfsGetDefaultBlockSizeAtPath - Get the default blocksize at the
@@ -544,14 +530,12 @@ cdef extern from "hdfs.h":
     #
     tOffset hdfsGetDefaultBlockSizeAtPath(hdfsFS fs, char *path)
 
-
     # 
     # hdfsGetCapacity - Return the raw capacity of the filesystem.  
     # @param fs The configured filesystem handle.
     # @return Returns the raw-capacity; -1 on error. 
     #
     tOffset hdfsGetCapacity(hdfsFS fs)
-
 
     # 
     # hdfsGetUsed - Return the total raw size of all files in the filesystem.
@@ -569,8 +553,7 @@ cdef extern from "hdfs.h":
     # @param group         Group string.  Set to NULL for 'no change'
     # @return              0 on success else -1
     #
-    int hdfsChown(hdfsFS fs, char* path, char *owner,
-                  char *group)
+    int hdfsChown(hdfsFS fs, char* path, char *owner, char *group)
 
     # 
     # hdfsChmod
@@ -674,15 +657,19 @@ def FreeBuilder(Python_hdfsBuilder bld):
 def BuilderConfSetStr(Python_hdfsBuilder bld, char *key, char *val):
     hdfsBuilderConfSetStr(bld.inner, key, val)
 
-# FIXME:
 # int hdfsConfGetStr(char *key, char **val)
-# def ConfGetStr(char *key, char **val):
-#     return hdfsConfGetStr(key, val)
+def ConfGetStr(char *key):
+    cdef char *val
+    ret = hdfsConfGetStr(key, &val)
+    py_string = val
+    hdfsConfStrFree(val)
+    return (ret, py_string)
 
-# FIXME:
 # int hdfsConfGetInt(char *key, int32_t *val)
-# def ConfGetInt(char *key, int32_t *val):
-#     return hdfsConfGetInt(key, val)
+def ConfGetInt(char *key):
+    cdef int32_t val
+    ret = hdfsConfGetInt(key, &val)
+    return (ret, val)
 
 # void hdfsConfStrFree(char *val)
 def ConfStrFree(char *val):
@@ -721,17 +708,15 @@ def Tell(Python_hdfsFS fs, Python_hdfsFile file):
 def Read(Python_hdfsFS fs, Python_hdfsFile file, tSize length):
     cdef char * buf = <char *> malloc(length * sizeof(char))
     cdef tSize n = hdfsRead(fs.inner, file.inner, buf, length)
-    py_buffer = [ buf[i] for i in range(length) ]
+    py_buffer = [ buf[i] for i in range(0, n) ]
     free(buf)
     return (n, py_buffer)
 
-# tSize hdfsPread(hdfsFS fs, hdfsFile file, tOffset position,
-#                 void* buffer, tSize length)
+# tSize hdfsPread(hdfsFS fs, hdfsFile file, tOffset position, void* buffer, tSize length)
 def Pread(Python_hdfsFS fs, Python_hdfsFile file, tOffset position, tSize length):
     pass
 
-# tSize hdfsWrite(hdfsFS fs, hdfsFile file, void* buffer,
-#                 tSize length)
+# tSize hdfsWrite(hdfsFS fs, hdfsFile file, void* buffer, tSize length)
 def Write(Python_hdfsFS fs, Python_hdfsFile file, object py_buffer):
     length = len(py_buffer)
     cdef char * buf = <char *> malloc(length * sizeof(char))
@@ -741,3 +726,141 @@ def Write(Python_hdfsFS fs, Python_hdfsFile file, object py_buffer):
     free(buf)
     return n
 
+# int hdfsFlush(hdfsFS fs, hdfsFile file)
+def Flush(Python_hdfsFS fs, Python_hdfsFile file):
+    return hdfsFlush(fs.inner, file.inner)
+
+# int hdfsHFlush(hdfsFS fs, hdfsFile file)
+def HFlush(Python_hdfsFS fs, Python_hdfsFile file):
+    return hdfsHFlush(fs.inner, file.inner)
+
+# int hdfsAvailable(hdfsFS fs, hdfsFile file)
+def Available(Python_hdfsFS fs, Python_hdfsFile file):
+    return hdfsAvailable(fs.inner, file.inner)
+
+# int hdfsCopy(hdfsFS srcFS, char* src, hdfsFS dstFS, char* dst)
+def Copy(Python_hdfsFS srcFS, char* src, Python_hdfsFS dstFS, char* dst):
+    return hdfsCopy(srcFS.inner, src, dstFS.inner, dst)
+
+# int hdfsMove(hdfsFS srcFS, char* src, hdfsFS dstFS, char* dst)
+def Move(Python_hdfsFS srcFS, char* src, Python_hdfsFS dstFS, char* dst):
+    return hdfsMove(srcFS.inner, src, dstFS.inner, dst)
+
+# int hdfsRename(hdfsFS fs, char* oldPath, char* newPath)
+def Rename(Python_hdfsFS fs, char* oldPath, char* newPath):
+    return hdfsRename(fs.inner, oldPath, newPath)
+
+# char* hdfsGetWorkingDirectory(hdfsFS fs, char *buffer, size_t bufferSize)
+def GetWorkingDirectory(Python_hdfsFS fs, char *buffer, size_t bufferSize):
+    return hdfsGetWorkingDirectory(fs.inner, buffer, bufferSize)
+
+# int hdfsSetWorkingDirectory(hdfsFS fs, char* path)
+def SetWorkingDirectory(Python_hdfsFS fs, char * path):
+    return hdfsSetWorkingDirectory(fs.inner, path)
+
+# int hdfsCreateDirectory(hdfsFS fs, char* path)
+def CreateDirectory(Python_hdfsFS fs, char* path):
+    return hdfsCreateDirectory(fs.inner, path)
+
+# int hdfsSetReplication(hdfsFS fs, char* path, int16_t replication)
+def SetReplication(Python_hdfsFS fs, char* path, int16_t replication):
+    return hdfsSetReplication(fs.inner, path, replication)
+
+class HDFSFileInfo():
+    def __init__(self, 
+                 mKind,
+                 mName,
+                 mLastMod,
+                 mSize,
+                 mReplication,
+                 mBlockSize,
+                 mOwner,
+                 mGroup,
+                 mPermissions,
+                 mLastAccess):
+        self.mKind = mKind
+        self.mName = mName
+        self.mLastMod = mLastMod
+        self.mSize = mSize
+        self.mReplication = mReplication
+        self.mBlockSize = mBlockSize
+        self.mOwner = mOwner
+        self.mGroup = mGroup
+        self.mPermissions = mPermissions
+        self.mLastAccess = mLastAccess
+    def __repr__(self):
+        return "<HDFSFile: %s>" % self.mName
+
+# hdfsFileInfo *hdfsListDirectory(hdfsFS fs, char* path, int *numEntries)
+def ListDirectory(Python_hdfsFS fs, char *path):
+    cdef int n
+    cdef hdfsFileInfo *entries = hdfsListDirectory(fs.inner, path, &n)
+    info = [ HDFSFileInfo(entries[i].mKind,
+                          entries[i].mName,
+                          entries[i].mLastMod,
+                          entries[i].mSize,
+                          entries[i].mReplication,
+                          entries[i].mBlockSize,
+                          entries[i].mOwner,
+                          entries[i].mGroup,
+                          entries[i].mPermissions,
+                          entries[i].mLastAccess) for i in range(n) ]
+    hdfsFreeFileInfo(entries, n)
+    return info
+
+# hdfsFileInfo *hdfsGetPathInfo(hdfsFS fs, char* path)
+def GetPathInfo(Python_hdfsFS fs, char* path):
+    cdef hdfsFileInfo *entry = hdfsGetPathInfo(fs.inner, path)
+    info = HDFSFileInfo(entry.mKind,
+                        entry.mName,
+                        entry.mLastMod,
+                        entry.mSize,
+                        entry.mReplication,
+                        entry.mBlockSize,
+                        entry.mOwner,
+                        entry.mGroup,
+                        entry.mPermissions,
+                        entry.mLastAccess)
+    hdfsFreeFileInfo(entry, 1)
+    return info
+    
+# char*** hdfsGetHosts(hdfsFS fs, char* path, tOffset start, tOffset length)
+def GetHosts(Python_hdfsFS fs, char* path, tOffset start, tOffset length):
+    cdef char ***hosts = hdfsGetHosts(fs.inner, path, start, length)
+    py_array, i = [], 0
+    while True:
+        if NULL == hosts[0][i]:
+            break
+        else:
+            py_array.append(hosts[0][i])
+        i += 1
+    hdfsFreeHosts(hosts)
+    return py_array
+
+# tOffset hdfsGetDefaultBlockSize(hdfsFS fs)
+def GetDefaultBlockSize(Python_hdfsFS fs):
+    return hdfsGetDefaultBlockSize(fs.inner)
+
+# tOffset hdfsGetDefaultBlockSizeAtPath(hdfsFS fs, char *path)
+def GetDefaultBlockSizeAtPath(Python_hdfsFS fs, char *path):
+    return hdfsGetDefaultBlockSizeAtPath(fs.inner, path)
+
+# tOffset hdfsGetCapacity(hdfsFS fs)
+def GetCapacity(Python_hdfsFS fs):
+    return hdfsGetCapacity(fs.inner)
+
+# tOffset hdfsGetUsed(hdfsFS fs)
+def GetUsed(Python_hdfsFS fs):
+    return hdfsGetUsed(fs.inner)
+
+# int hdfsChown(hdfsFS fs, char* path, char *owner, char *group)
+def Chown(Python_hdfsFS fs, char* path, char *owner, char *group):
+    return hdfsChown(fs.inner, path, owner, group)
+
+# int hdfsChmod(hdfsFS fs, char* path, short mode)
+def Chmod(Python_hdfsFS fs, char* path, short mode):
+    return hdfsChmod(fs.inner, path, mode)
+
+# int hdfsUtime(hdfsFS fs, char* path, tTime mtime, tTime atime)
+def Utime(Python_hdfsFS fs, char* path, tTime mtime, tTime atime):
+    return hdfsUtime(fs.inner, path, mtime, atime)
