@@ -16,7 +16,6 @@ cdef extern from "time.h":
 #
 # Some utility decls used in libhdfs.
 #
-
 cdef extern from "hdfs.h":
     struct hdfsBuilder
 
@@ -41,7 +40,7 @@ cdef extern from "hdfs.h":
     # @param file     The HDFS file
     # @return         1 if the file is open for read; 0 otherwise
     #
-    int hdfsFileIsOpenForRead(hdfsFile fname)
+    int hdfsFileIsOpenForRead(hdfsFile hdfs_file)
 
     #
     # Determine if a file is open for write.
@@ -49,7 +48,7 @@ cdef extern from "hdfs.h":
     # @param file     The HDFS file
     # @return         1 if the file is open for write; 0 otherwise
     #
-    int hdfsFileIsOpenForWrite(hdfsFile file)
+    int hdfsFileIsOpenForWrite(hdfsFile hdfs_file)
 
     # 
     # hdfsConnectAsUser - Connect to a hdfs file system as a specific user
@@ -197,8 +196,7 @@ cdef extern from "hdfs.h":
     #
     # @return         0 on success; nonzero error code otherwise.
     #
-    int hdfsBuilderConfSetStr(hdfsBuilder *bld, char *key,
-                              char *val)
+    int hdfsBuilderConfSetStr(hdfsBuilder *bld, char *key, char *val)
 
     #
     # Get a configuration string.
@@ -256,8 +254,7 @@ cdef extern from "hdfs.h":
     # default configured values.
     # @return Returns the handle to the open file or NULL on error.
     #
-    hdfsFile hdfsOpenFile(hdfsFS fs, char* path, int flags,
-                          int bufferSize, short replication, tSize blocksize)
+    hdfsFile hdfsOpenFile(hdfsFS fs, char* path, int flags, int bufferSize, short replication, tSize blocksize)
 
     # 
     # hdfsCloseFile - Close an open file. 
@@ -269,7 +266,7 @@ cdef extern from "hdfs.h":
     #         be freed at the end of this call, even if there was an I/O
     #         error.
     #
-    int hdfsCloseFile(hdfsFS fs, hdfsFile file)
+    int hdfsCloseFile(hdfsFS fs, hdfsFile hdfs_file)
 
     # 
     # hdfsExists - Checks if a given path exsits on the filesystem 
@@ -287,7 +284,7 @@ cdef extern from "hdfs.h":
     # @param desiredPos Offset into the file to seek into.
     # @return Returns 0 on success, -1 on error.  
     #
-    int hdfsSeek(hdfsFS fs, hdfsFile file, tOffset desiredPos)
+    int hdfsSeek(hdfsFS fs, hdfsFile hdfs_file, tOffset desiredPos)
 
     # 
     # hdfsTell - Get the current offset in the file, in bytes.
@@ -295,7 +292,7 @@ cdef extern from "hdfs.h":
     # @param file The file handle.
     # @return Current offset, -1 on error.
     #
-    tOffset hdfsTell(hdfsFS fs, hdfsFile file)
+    tOffset hdfsTell(hdfsFS fs, hdfsFile hdfs_file)
 
     # 
     # hdfsRead - Read data from an open file.
@@ -322,8 +319,7 @@ cdef extern from "hdfs.h":
     # @param length The length of the buffer.
     # @return      See hdfsRead
     #
-    tSize hdfsPread(hdfsFS fs, hdfsFile file, tOffset position,
-                    void* buffer, tSize length)
+    tSize hdfsPread(hdfsFS fs, hdfsFile hdfs_file, tOffset position, void* buffer, tSize length)
     
     # 
     # hdfsWrite - Write data into an open file.
@@ -333,8 +329,7 @@ cdef extern from "hdfs.h":
     # @param length The no. of bytes to write. 
     # @return Returns the number of bytes written, -1 on error.
     #
-    tSize hdfsWrite(hdfsFS fs, hdfsFile file, void* buffer,
-                    tSize length)
+    tSize hdfsWrite(hdfsFS fs, hdfsFile hdfs_file, void* buffer, tSize length)
 
     # 
     # hdfsWrite - Flush the data. 
@@ -342,7 +337,7 @@ cdef extern from "hdfs.h":
     # @param file The file handle.
     # @return Returns 0 on success, -1 on error. 
     #
-    int hdfsFlush(hdfsFS fs, hdfsFile file)
+    int hdfsFlush(hdfsFS fs, hdfsFile hdfs_file)
 
     #
     # hdfsHFlush - Flush out the data in client's user buffer. After the
@@ -351,7 +346,7 @@ cdef extern from "hdfs.h":
     # @param file file handle
     # @return 0 on success, -1 on error and sets errno
     #
-    int hdfsHFlush(hdfsFS fs, hdfsFile file)
+    int hdfsHFlush(hdfsFS fs, hdfsFile hdfs_file)
 
     #
     # hdfsAvailable - Number of bytes that can be read from this
@@ -360,7 +355,7 @@ cdef extern from "hdfs.h":
     # @param file The file handle.
     # @return Returns available bytes; -1 on error. 
     #
-    int hdfsAvailable(hdfsFS fs, hdfsFile file)
+    int hdfsAvailable(hdfsFS fs, hdfsFile hdfs_file)
 
     #
     # hdfsCopy - Copy file from one filesystem to another.
@@ -575,87 +570,118 @@ cdef extern from "hdfs.h":
     int hdfsUtime(hdfsFS fs, char* path, tTime mtime, tTime atime)
 
 cdef class Python_hdfsBuilder:
-    cdef hdfsBuilder * inner
+    cdef hdfsBuilder * c_ref
     def __repr__(self):
         return '<struct hdfsBuilder>'
 
 cdef class Python_hdfsFS:
-    cdef hdfsFS inner
+    cdef hdfsFS c_ref
     def __repr__(self):
         return '<struct hdfsFS>'
 
 cdef class Python_hdfsFile:
-    cdef hdfsFile inner
+    cdef hdfsFile c_ref
     def __repr__(self):
         return '<struct hdfsFile>'
 
-# int hdfsFileIsOpenForRead(hdfsFile fname)
-def FileIsOpenForRead(Python_hdfsFile fname):
-    return hdfsFileIsOpenForRead(fname.inner)
+# int hdfsFileIsOpenForRead(hdfsFile file)
+def FileIsOpenForRead(Python_hdfsFile hdfs_file):
+    return True if hdfsFileIsOpenForRead(hdfs_file.c_ref) == 1 else False
 
 # int hdfsFileIsOpenForWrite(hdfsFile file)
-def FileIsOpenForWrite(Python_hdfsFile fname):
-    return hdfsFileIsOpenForWrite(fname.inner)
+def FileIsOpenForWrite(Python_hdfsFile hdfs_file):
+    return True if hdfsFileIsOpenForWrite(hdfs_file.c_ref) == 1 else False
+
+from warnings import warn
 
 #hdfsFS hdfsConnectAsUser(char* nn, tPort port, char *user)
 def ConnectAsUser(char* nn, tPort port, char *user):
+    """
+    Depreciated.
+    """
+    warn("deprecated Use hdfsBuilderConnect instead.")
     python_hdfsFS = Python_hdfsFS()
-    python_hdfsFS.inner = hdfsConnectAsUser(nn, port, user)
+    python_hdfsFS.c_ref = hdfsConnectAsUser(nn, port, user)
     return python_hdfsFS
 
 #hdfsFS hdfsConnect(char* nn, tPort port)
 def Connect(char* nn, tPort port):
+    """
+    Depreciated.
+    """
+    warn("deprecated Use hdfsBuilderConnect instead.")
     python_hdfsFS = Python_hdfsFS()
-    python_hdfsFS.inner = hdfsConnect(nn, port)
+    python_hdfsFS.c_ref = hdfsConnect(nn, port)
     return python_hdfsFS
 
 # hdfsFS hdfsConnectAsUserNewInstance(char* nn, tPort port, char *user )
 def ConnectAsUserNewInstance(char* nn, tPort port, char *user):
+    """
+    Depreciated.
+    """
+    warn("deprecated Use hdfsBuilderConnect instead.")
     python_hdfsFS = Python_hdfsFS()
-    python_hdfsFS.inner = hdfsConnectAsUserNewInstance(nn, port, user)
+    python_hdfsFS.c_ref = hdfsConnectAsUserNewInstance(nn, port, user)
     return python_hdfsFS
 
 # hdfsFS hdfsConnectNewInstance(char* nn, tPort port)
 def ConnectNewInstance(char* nn, tPort port):
+    """
+    Depreciated.
+    """
+    warn("deprecated Use hdfsBuilderConnect instead.")
     python_hdfsFS = Python_hdfsFS()
-    python_hdfsFS.inner = hdfsConnectNewInstance(nn, port)
+    python_hdfsFS.c_ref = hdfsConnectNewInstance(nn, port)
     return python_hdfsFS
 
 # hdfsFS hdfsBuilderConnect(hdfsBuilder bld)
 def BuilderConnect(Python_hdfsBuilder bld):
     python_hdfsFS = Python_hdfsFS()
-    python_hdfsFS.inner = hdfsBuilderConnect(bld.inner)
-    return python_hdfsFS
+    python_hdfsFS.c_ref = hdfsBuilderConnect(bld.c_ref)
+    if not python_hdfsFS.c_ref == NULL:
+        return python_hdfsFS
+    else:
+        raise Exception("Failed to connect")
 
-# hdfsBuilder *hdfsNewBuilder)
+# hdfsBuilder *hdfsNewBuilder()
 def NewBuilder():
     python_hdfsBuilder = Python_hdfsBuilder()
-    python_hdfsBuilder.inner = hdfsNewBuilder()
-    return python_hdfsBuilder
+    python_hdfsBuilder.c_ref = hdfsNewBuilder()
+    if not python_hdfsBuilder.c_ref == NULL:
+        return python_hdfsBuilder
+    else:
+        raise Exception("Failed to build Builder")
 
 # void hdfsBuilderSetForceNewInstance(hdfsBuilder *bld)
 def BuilderSetForceNewInstance(Python_hdfsBuilder bld):
-    hdfsBuilderSetForceNewInstance(bld.inner)
+    hdfsBuilderSetForceNewInstance(bld.c_ref)
 
 # void hdfsBuilderSetNameNode(hdfsBuilder *bld, char *nn)
 def BuilderSetNameNode(Python_hdfsBuilder bld, char *nn):
-    hdfsBuilderSetNameNode(bld.inner, nn)
+    """
+    Where nn is 'default', 'hdfs://hostname:port', or NULL.
+    """
+    hdfsBuilderSetNameNode(bld.c_ref, nn)
 
 # void hdfsBuilderSetUserName(hdfsBuilder *bld, char *userName)
 def BuilderSetUserName(Python_hdfsBuilder bld, char *userName):
-    hdfsBuilderSetUserName(bld.inner, userName)
+    hdfsBuilderSetUserName(bld.c_ref, userName)
 
 # void hdfsBuilderSetKerbTicketCachePath(hdfsBuilder *bld, char *kerbTicketCachePath)
 def BuilderSetKerbTicketCachePath(Python_hdfsBuilder bld, char *kerbTicketCachePath):
-    hdfsBuilderSetKerbTicketCachePath(bld.inner, kerbTicketCachePath)
+    hdfsBuilderSetKerbTicketCachePath(bld.c_ref, kerbTicketCachePath)
 
 # void hdfsFreeBuilder(hdfsBuilder *bld)
 def FreeBuilder(Python_hdfsBuilder bld):
-    hdfsFreeBuilder(bld.inner)
+    """
+    Don't call this!
+    """
+    warn("It is normally not necessary to call this function since hdfsBuilderConnect frees the builder.")
+    hdfsFreeBuilder(bld.c_ref)
 
 # int hdfsBuilderConfSetStr(hdfsBuilder *bld, char *key, char *val)
 def BuilderConfSetStr(Python_hdfsBuilder bld, char *key, char *val):
-    hdfsBuilderConfSetStr(bld.inner, key, val)
+    hdfsBuilderConfSetStr(bld.c_ref, key, val)
 
 # int hdfsConfGetStr(char *key, char **val)
 def ConfGetStr(char *key):
@@ -677,94 +703,128 @@ def ConfStrFree(char *val):
 
 # int hdfsDisconnect(hdfsFS fs)
 def Disconnect(Python_hdfsFS fs):
-    return hdfsDisconnect(fs.inner)
+    return True if hdfsDisconnect(fs.c_ref) == 0 else False
 
 # hdfsFile hdfsOpenFile(hdfsFS fs, char* path, int flags,
 # int bufferSize, short replication, tSize blocksize)
 def OpenFile(Python_hdfsFS fs, char* path, int flags,
              int bufferSize, short replication, tSize blocksize):
     python_hdfsFile = Python_hdfsFile()
-    python_hdfsFile.inner = hdfsOpenFile(fs.inner, path, flags,
+    python_hdfsFile.c_ref = hdfsOpenFile(fs.c_ref, path, flags,
                                          bufferSize, replication, blocksize)
-    return python_hdfsFile
+    if python_hdfsFile.c_ref != NULL:
+        return python_hdfsFile
+    else:
+        raise Exception("No such file or directory: %s" % path)
 
 # int hdfsCloseFile(hdfsFS fs, hdfsFile file)
-def CloseFile(Python_hdfsFS fs, Python_hdfsFile file):
-    return hdfsCloseFile(fs.inner, file.inner)
+def CloseFile(Python_hdfsFS fs, Python_hdfsFile hdfs_file):
+    return True if hdfsCloseFile(fs.c_ref, hdfs_file.c_ref) == 0 else False
 
 # int hdfsExists(hdfsFS fs, char *path)
 def Exists(Python_hdfsFS fs, char *path):
-    return hdfsExists(fs.inner, path)
+    if len(path) == 0:
+        return False
+    else:
+        return True if hdfsExists(fs.c_ref, path) == 0 else False
 
 # int hdfsSeek(hdfsFS fs, hdfsFile file, tOffset desiredPos)
-def Seek(Python_hdfsFS fs, Python_hdfsFile file, tOffset desiredPos):
-    return hdfsSeek(fs.inner, file.inner, desiredPos)
+def Seek(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tOffset desiredPos):
+    return True if hdfsSeek(fs.c_ref, hdfs_file.c_ref, desiredPos) == 0 else False
 
 # tOffset hdfsTell(hdfsFS fs, hdfsFile file)
-def Tell(Python_hdfsFS fs, Python_hdfsFile file):
-    return hdfsTell(fs.inner, file.inner)
+def Tell(Python_hdfsFS fs, Python_hdfsFile hdfs_file):
+    i = hdfsTell(fs.c_ref, hdfs_file.c_ref)
+    if not i == -1:
+        return i
+    else:
+        raise Exception("Tell failed")
 
 # tSize hdfsRead(hdfsFS fs, hdfsFile file, void* buffer, tSize length)
-def Read(Python_hdfsFS fs, Python_hdfsFile file, tSize length):
+def Read(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tSize length):
     cdef char * buf = <char *> malloc(length * sizeof(char))
-    cdef tSize n = hdfsRead(fs.inner, file.inner, buf, length)
+    cdef tSize n = hdfsRead(fs.c_ref, hdfs_file.c_ref, buf, length)
     py_buffer = [ buf[i] for i in range(0, n) ]
     free(buf)
     return (n, py_buffer)
 
 # tSize hdfsPread(hdfsFS fs, hdfsFile file, tOffset position, void* buffer, tSize length)
-def Pread(Python_hdfsFS fs, Python_hdfsFile file, tOffset position, tSize length):
-    pass
+def Pread(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tOffset position, tSize length):
+    cdef char * buf = <char *> malloc(length * sizeof(char))
+    cdef tSize n = hdfsPread(fs.c_ref, hdfs_file.c_ref, position, buf, length)
+    py_buffer = [ buf[i] for i in range(0, n) ]
+    free(buf)
+    return (n, py_buffer)
 
 # tSize hdfsWrite(hdfsFS fs, hdfsFile file, void* buffer, tSize length)
-def Write(Python_hdfsFS fs, Python_hdfsFile file, object py_buffer):
+def Write(Python_hdfsFS fs, Python_hdfsFile hdfs_file, object py_buffer):
     length = len(py_buffer)
     cdef char * buf = <char *> malloc(length * sizeof(char))
     for i in range(length):
         buf[i] = ord(py_buffer[i])
-    cdef tSize n = <int> hdfsWrite(fs.inner, file.inner, buf, length)
+    cdef tSize n = <int> hdfsWrite(fs.c_ref, hdfs_file.c_ref, buf, length)
     free(buf)
     return n
 
 # int hdfsFlush(hdfsFS fs, hdfsFile file)
-def Flush(Python_hdfsFS fs, Python_hdfsFile file):
-    return hdfsFlush(fs.inner, file.inner)
+def Flush(Python_hdfsFS fs, Python_hdfsFile hdfs_file):
+    return hdfsFlush(fs.c_ref, hdfs_file.c_ref)
 
 # int hdfsHFlush(hdfsFS fs, hdfsFile file)
-def HFlush(Python_hdfsFS fs, Python_hdfsFile file):
-    return hdfsHFlush(fs.inner, file.inner)
+def HFlush(Python_hdfsFS fs, Python_hdfsFile hdfs_file):
+    return hdfsHFlush(fs.c_ref, hdfs_file.c_ref)
 
 # int hdfsAvailable(hdfsFS fs, hdfsFile file)
-def Available(Python_hdfsFS fs, Python_hdfsFile file):
-    return hdfsAvailable(fs.inner, file.inner)
+def Available(Python_hdfsFS fs, Python_hdfsFile hdfs_file):
+    return hdfsAvailable(fs.c_ref, hdfs_file.c_ref)
 
 # int hdfsCopy(hdfsFS srcFS, char* src, hdfsFS dstFS, char* dst)
 def Copy(Python_hdfsFS srcFS, char* src, Python_hdfsFS dstFS, char* dst):
-    return hdfsCopy(srcFS.inner, src, dstFS.inner, dst)
+    if len(src) == 0 or len(dst):
+        return False
+    else:
+        return True if hdfsCopy(srcFS.c_ref, src, dstFS.c_ref, dst) == 0 else False
+
+# int hdfsDelete(hdfsFS fs, char* path, int recursive)
+def Delete(Python_hdfsFS fs, char* path, int recursive):
+    if len(path) == 0:
+        return False
+    else:
+        return True if hdfsDelete(fs.c_ref, path, recursive) == 0 else False
 
 # int hdfsMove(hdfsFS srcFS, char* src, hdfsFS dstFS, char* dst)
 def Move(Python_hdfsFS srcFS, char* src, Python_hdfsFS dstFS, char* dst):
-    return hdfsMove(srcFS.inner, src, dstFS.inner, dst)
+    return hdfsMove(srcFS.c_ref, src, dstFS.c_ref, dst)
 
 # int hdfsRename(hdfsFS fs, char* oldPath, char* newPath)
 def Rename(Python_hdfsFS fs, char* oldPath, char* newPath):
-    return hdfsRename(fs.inner, oldPath, newPath)
+    return hdfsRename(fs.c_ref, oldPath, newPath)
 
 # char* hdfsGetWorkingDirectory(hdfsFS fs, char *buffer, size_t bufferSize)
-def GetWorkingDirectory(Python_hdfsFS fs, char *buffer, size_t bufferSize):
-    return hdfsGetWorkingDirectory(fs.inner, buffer, bufferSize)
+def GetWorkingDirectory(Python_hdfsFS fs): #, char *buffer, size_t bufferSize):
+    size = 4096
+    cdef char * c_buf = <char *> malloc(sizeof(char) * size)
+    dir_str = hdfsGetWorkingDirectory(fs.c_ref, c_buf, size)
+    free(c_buf)
+    if not dir_str == NULL:
+        return dir_str
+    else:
+        raise Exception("No such file or directory.")
 
 # int hdfsSetWorkingDirectory(hdfsFS fs, char* path)
 def SetWorkingDirectory(Python_hdfsFS fs, char * path):
-    return hdfsSetWorkingDirectory(fs.inner, path)
+    return hdfsSetWorkingDirectory(fs.c_ref, path)
 
 # int hdfsCreateDirectory(hdfsFS fs, char* path)
 def CreateDirectory(Python_hdfsFS fs, char* path):
-    return hdfsCreateDirectory(fs.inner, path)
+    if len(path) == 0:
+        return False
+    else:
+        return True if hdfsCreateDirectory(fs.c_ref, path) == 0 else False
 
 # int hdfsSetReplication(hdfsFS fs, char* path, int16_t replication)
 def SetReplication(Python_hdfsFS fs, char* path, int16_t replication):
-    return hdfsSetReplication(fs.inner, path, replication)
+    return hdfsSetReplication(fs.c_ref, path, replication)
 
 class HDFSFileInfo():
     def __init__(self, 
@@ -794,73 +854,73 @@ class HDFSFileInfo():
 # hdfsFileInfo *hdfsListDirectory(hdfsFS fs, char* path, int *numEntries)
 def ListDirectory(Python_hdfsFS fs, char *path):
     cdef int n
-    cdef hdfsFileInfo *entries = hdfsListDirectory(fs.inner, path, &n)
-    info = [ HDFSFileInfo(entries[i].mKind,
-                          entries[i].mName,
-                          entries[i].mLastMod,
-                          entries[i].mSize,
-                          entries[i].mReplication,
-                          entries[i].mBlockSize,
-                          entries[i].mOwner,
-                          entries[i].mGroup,
-                          entries[i].mPermissions,
-                          entries[i].mLastAccess) for i in range(n) ]
+    cdef hdfsFileInfo *entries = hdfsListDirectory(fs.c_ref, path, &n)
+    dir_list = [ HDFSFileInfo(entries[i].mKind,
+                              entries[i].mName,
+                              entries[i].mLastMod,
+                              entries[i].mSize,
+                              entries[i].mReplication,
+                              entries[i].mBlockSize,
+                              entries[i].mOwner,
+                              entries[i].mGroup,
+                              entries[i].mPermissions,
+                              entries[i].mLastAccess) for i in range(n) ]
     hdfsFreeFileInfo(entries, n)
-    return info
+    return dir_list
 
 # hdfsFileInfo *hdfsGetPathInfo(hdfsFS fs, char* path)
 def GetPathInfo(Python_hdfsFS fs, char* path):
-    cdef hdfsFileInfo *entry = hdfsGetPathInfo(fs.inner, path)
-    info = HDFSFileInfo(entry.mKind,
-                        entry.mName,
-                        entry.mLastMod,
-                        entry.mSize,
-                        entry.mReplication,
-                        entry.mBlockSize,
-                        entry.mOwner,
-                        entry.mGroup,
-                        entry.mPermissions,
-                        entry.mLastAccess)
-    hdfsFreeFileInfo(entry, 1)
-    return info
+    cdef hdfsFileInfo *c_entry = hdfsGetPathInfo(fs.c_ref, path)
+    entry = HDFSFileInfo(c_entry.mKind,
+                         c_entry.mName,
+                         c_entry.mLastMod,
+                         c_entry.mSize,
+                         c_entry.mReplication,
+                         c_entry.mBlockSize,
+                         c_entry.mOwner,
+                         c_entry.mGroup,
+                         c_entry.mPermissions,
+                         c_entry.mLastAccess)
+    hdfsFreeFileInfo(c_entry, 1)
+    return entry
     
 # char*** hdfsGetHosts(hdfsFS fs, char* path, tOffset start, tOffset length)
 def GetHosts(Python_hdfsFS fs, char* path, tOffset start, tOffset length):
-    cdef char ***hosts = hdfsGetHosts(fs.inner, path, start, length)
-    py_array, i = [], 0
+    cdef char ***hosts = hdfsGetHosts(fs.c_ref, path, start, length)
+    hosts_list, i = [], 0
     while True:
         if NULL == hosts[0][i]:
             break
         else:
-            py_array.append(hosts[0][i])
+            hosts_list.append(hosts[0][i])
         i += 1
     hdfsFreeHosts(hosts)
-    return py_array
+    return hosts_list
 
 # tOffset hdfsGetDefaultBlockSize(hdfsFS fs)
 def GetDefaultBlockSize(Python_hdfsFS fs):
-    return hdfsGetDefaultBlockSize(fs.inner)
+    return hdfsGetDefaultBlockSize(fs.c_ref)
 
 # tOffset hdfsGetDefaultBlockSizeAtPath(hdfsFS fs, char *path)
 def GetDefaultBlockSizeAtPath(Python_hdfsFS fs, char *path):
-    return hdfsGetDefaultBlockSizeAtPath(fs.inner, path)
+    return hdfsGetDefaultBlockSizeAtPath(fs.c_ref, path)
 
 # tOffset hdfsGetCapacity(hdfsFS fs)
 def GetCapacity(Python_hdfsFS fs):
-    return hdfsGetCapacity(fs.inner)
+    return hdfsGetCapacity(fs.c_ref)
 
 # tOffset hdfsGetUsed(hdfsFS fs)
 def GetUsed(Python_hdfsFS fs):
-    return hdfsGetUsed(fs.inner)
+    return hdfsGetUsed(fs.c_ref)
 
 # int hdfsChown(hdfsFS fs, char* path, char *owner, char *group)
 def Chown(Python_hdfsFS fs, char* path, char *owner, char *group):
-    return hdfsChown(fs.inner, path, owner, group)
+    return hdfsChown(fs.c_ref, path, owner, group)
 
 # int hdfsChmod(hdfsFS fs, char* path, short mode)
 def Chmod(Python_hdfsFS fs, char* path, short mode):
-    return hdfsChmod(fs.inner, path, mode)
+    return hdfsChmod(fs.c_ref, path, mode)
 
 # int hdfsUtime(hdfsFS fs, char* path, tTime mtime, tTime atime)
 def Utime(Python_hdfsFS fs, char* path, tTime mtime, tTime atime):
-    return hdfsUtime(fs.inner, path, mtime, atime)
+    return hdfsUtime(fs.c_ref, path, mtime, atime)

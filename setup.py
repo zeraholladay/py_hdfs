@@ -3,7 +3,7 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 
 ext_modules=[
-    Extension("py_hdfs", ["py_hdfs.pyx"], libraries=["/usr/lib/hdfs"]),
+    Extension("py_hdfs", ["src/py_hdfs.pyx"], libraries=["/usr/lib/hdfs"]),
 ]
 
 setup(
