@@ -1,6 +1,9 @@
 from libc.stdlib cimport malloc, free
 from warnings import warn
 
+def _init_module():
+    pass
+
 #
 # Some utility decls used in libhdfs.
 #
@@ -768,7 +771,6 @@ def Pread(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tOffset position, tSize l
         return (n, py_buffer)
     else:
         return -1, []
-    return (n, py_buffer)
 
 # tSize hdfsWrite(hdfsFS fs, hdfsFile file, void* buffer, tSize length)
 def Write(Python_hdfsFS fs, Python_hdfsFile hdfs_file, object py_buffer):
@@ -881,8 +883,11 @@ class HDFSFileInfo():
 
 # hdfsFileInfo *hdfsListDirectory(hdfsFS fs, char* path, int *numEntries)
 def ListDirectory(Python_hdfsFS fs, char *path):
+    assert(isinstance(fs, Python_hdfsFS) and isinstance(path, str))
     cdef int n
     cdef hdfsFileInfo *entries = hdfsListDirectory(fs.c_ref, path, &n)
+    if entries == NULL:
+        return None
     dir_list = [ HDFSFileInfo(entries[i].mKind,
                               entries[i].mName,
                               entries[i].mLastMod,
@@ -898,6 +903,8 @@ def ListDirectory(Python_hdfsFS fs, char *path):
 
 # hdfsFileInfo *hdfsGetPathInfo(hdfsFS fs, char* path)
 def GetPathInfo(Python_hdfsFS fs, char* path):
+    assert(isinstance(fs, Python_hdfsFS) and 
+           isinstance(path, str))
     cdef hdfsFileInfo *c_entry = hdfsGetPathInfo(fs.c_ref, path)
     entry = HDFSFileInfo(c_entry.mKind,
                          c_entry.mName,
@@ -914,6 +921,9 @@ def GetPathInfo(Python_hdfsFS fs, char* path):
     
 # char*** hdfsGetHosts(hdfsFS fs, char* path, tOffset start, tOffset length)
 def GetHosts(Python_hdfsFS fs, char* path, tOffset start, tOffset length):
+    assert(isinstance(fs, Python_hdfsFS) and 
+           isinstance(path, str) and
+           isinstance(length, int))
     cdef char ***hosts = hdfsGetHosts(fs.c_ref, path, start, length)
     if NULL == hosts:
         return None
@@ -955,3 +965,4 @@ def Chmod(Python_hdfsFS fs, char* path, short mode):
 # int hdfsUtime(hdfsFS fs, char* path, tTime mtime, tTime atime)
 def Utime(Python_hdfsFS fs, char* path, tTime mtime, tTime atime):
     return hdfsUtime(fs.c_ref, path, mtime, atime)
+
