@@ -3,7 +3,7 @@ build:
 	python setup.py build_ext --inplace
 
 test: build
-	nosetests
+	-nosetests
 
 clean:
 	-rm py_hdfs.c py_hdfs.so *.pyc *.log
