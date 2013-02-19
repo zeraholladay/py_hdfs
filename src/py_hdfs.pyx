@@ -642,7 +642,7 @@ def BuilderConnect(Python_hdfsBuilder bld):
     if not python_hdfsFS.c_ref == NULL:
         return python_hdfsFS
     else:
-        raise Exception("Failed to connect")
+        return None
 
 # hdfsBuilder *hdfsNewBuilder()
 def NewBuilder():
@@ -744,7 +744,8 @@ def Tell(Python_hdfsFS fs, Python_hdfsFile hdfs_file):
 # tSize hdfsRead(hdfsFS fs, hdfsFile file, void* buffer, tSize length)
 def Read(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tSize length):
     assert(isinstance(fs, Python_hdfsFS) and
-           isinstance(hdfs_file, Python_hdfsFile))
+           isinstance(hdfs_file, Python_hdfsFile) and
+           isinstance(length, int))
     cdef char * buf = <char *> malloc(length * sizeof(char))
     cdef tSize n = hdfsRead(fs.c_ref, hdfs_file.c_ref, buf, length)
     if n > -1:
@@ -756,6 +757,9 @@ def Read(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tSize length):
 
 # tSize hdfsPread(hdfsFS fs, hdfsFile file, tOffset position, void* buffer, tSize length)
 def Pread(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tOffset position, tSize length):
+    assert(isinstance(fs, Python_hdfsFS) and
+           isinstance(hdfs_file, Python_hdfsFile) and
+           isinstance(position, int) and isinstance(length, int))
     cdef char * buf = <char *> malloc(length * sizeof(char))
     cdef tSize n = hdfsPread(fs.c_ref, hdfs_file.c_ref, position, buf, length)
     if n > -1:
@@ -827,7 +831,7 @@ def GetWorkingDirectory(Python_hdfsFS fs): #, char *buffer, size_t bufferSize):
     cdef char * status = NULL
     if hdfsGetWorkingDirectory(fs.c_ref, c_buf, size) == NULL:
         free(c_buf)
-        raise Exception("No such file or directory.")
+        return None
     else:
         return c_buf
 
@@ -912,7 +916,7 @@ def GetPathInfo(Python_hdfsFS fs, char* path):
 def GetHosts(Python_hdfsFS fs, char* path, tOffset start, tOffset length):
     cdef char ***hosts = hdfsGetHosts(fs.c_ref, path, start, length)
     if NULL == hosts:
-        raise Exception("hdfsGetHosts failed")
+        return None
     else:
         hosts_list, i = [], 0
         while True:
