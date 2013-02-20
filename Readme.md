@@ -9,17 +9,13 @@ Requirements:
     Cython==0.15.1
     nose==1.1.2
 
-And then execute:
+Install:
 
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install test_gem
+    $ python setup.py install
 
 ## Usage
 
-Setup the environment:
+Setup the environment first:
 
     $ export JAVA_HOME=$(readlink -f $(which java) | sed "s:/jre/bin/java::")
     $ export LD_LIBRARY_PATH=$JAVA_HOME/jre/lib/amd64/server:/usr/lib/hadoop/lib/native
@@ -29,10 +25,6 @@ Test:
 
     $ python setup.py build_ext --inplace
     $ nosetests
-
-Install:
-
-    $ python setup.py install
 
 Code:
 
