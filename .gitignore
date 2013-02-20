@@ -2,4 +2,4 @@
 *.so
 build/
 \#*
-src/py_hdfs.c
+py_hdfs/py_hdfs.c

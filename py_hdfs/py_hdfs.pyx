@@ -754,8 +754,9 @@ def Read(Python_hdfsFS fs, Python_hdfsFile hdfs_file, tSize length):
     if n > -1:
         py_buffer = [ buf[i] for i in range(0, n) ]
         free(buf)
-        return (n, py_buffer)
+        return n, py_buffer
     else:
+        free(buf)
         return -1, []
 
 # tSize hdfsPread(hdfsFS fs, hdfsFile file, tOffset position, void* buffer, tSize length)
@@ -839,17 +840,11 @@ def GetWorkingDirectory(Python_hdfsFS fs): #, char *buffer, size_t bufferSize):
 
 # int hdfsSetWorkingDirectory(hdfsFS fs, char* path)
 def SetWorkingDirectory(Python_hdfsFS fs, char * path):
-    if len(path) == 0:
-        return False
-    else:
-        return True if hdfsSetWorkingDirectory(fs.c_ref, path) == 0 else False
+    return True if hdfsSetWorkingDirectory(fs.c_ref, path) == 0 else False
 
 # int hdfsCreateDirectory(hdfsFS fs, char* path)
 def CreateDirectory(Python_hdfsFS fs, char* path):
-    if len(path) == 0:
-        return False
-    else:
-        return True if hdfsCreateDirectory(fs.c_ref, path) == 0 else False
+    return True if hdfsCreateDirectory(fs.c_ref, path) == 0 else False
 
 # int hdfsSetReplication(hdfsFS fs, char* path, int16_t replication)
 def SetReplication(Python_hdfsFS fs, char* path, int16_t replication):
@@ -886,8 +881,8 @@ def ListDirectory(Python_hdfsFS fs, char *path):
     assert(isinstance(fs, Python_hdfsFS) and isinstance(path, str))
     cdef int n
     cdef hdfsFileInfo *entries = hdfsListDirectory(fs.c_ref, path, &n)
-    if entries == NULL:
-        return None
+    if entries == NULL: #XXX: returns NULL on empty dir too
+        return []
     dir_list = [ HDFSFileInfo(entries[i].mKind,
                               entries[i].mName,
                               entries[i].mLastMod,

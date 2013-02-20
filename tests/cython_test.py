@@ -2,8 +2,7 @@ import _py_hdfs as py_hdfs
 from nose.tools import eq_, ok_, set_trace, nottest
 from uuid import uuid4
 from os import (O_RDONLY,
-                O_WRONLY, 
-                O_CREAT)
+                O_WRONLY)
 fs = None
 
 def setUp():
@@ -17,7 +16,7 @@ def tearDown():
 
 def mktemp():
     fname = str(uuid4())
-    hdfs_file = py_hdfs.OpenFile(fs, fname, O_WRONLY | O_CREAT, 0, 0, 0)
+    hdfs_file = py_hdfs.OpenFile(fs, fname, O_WRONLY, 0, 0, 0)
     py_hdfs.CloseFile(fs, hdfs_file)
     return fname
 
